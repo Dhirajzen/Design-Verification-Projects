@@ -84,7 +84,7 @@ module apb (
   reg add_value = 0;
   
   always @(*) begin
-    if (paddr >= 0)
+    if ($isunknown(paddr))
       add_value = 1'b 0;
     else
       add_value = 1'b 1;
@@ -93,15 +93,15 @@ module apb (
   reg data_value = 0;
   
   always @(*) begin
-    if (pwdata >= 0)
+    if ($isunknown(pwdata))
       data_value = 1'b 0;
     else
       data_value = 1'b 1;
   end
-  
-  assign addr_err = ((nstate == write || read) && (paddr > 200)) ? 1'b 1 : 1'b 0;
-  assign addv_err = ((nstate == write || read) && add_value) ? 1'b 1 : 1'b 0;
-  assign data_err = ((nstate == write || read) && data_value) ? 1'b 1 : 1'b 0; 
+
+  assign addr_err = (((nstate == write) || (nstate == read)) && (paddr > 200)) ? 1'b 1 : 1'b 0;
+  assign addv_err = (((nstate == write) || (nstate == read)) && add_value) ? 1'b 1 : 1'b 0;
+  assign data_err = (((nstate == write) || (nstate == read)) && data_value) ? 1'b 1 : 1'b 0; 
   
   assign pslverr = (psel == 1'b 1 && penable == 1'b 1) ? (addr_err || addv_err || data_err) : 1'b 0; 
   
