@@ -11,7 +11,9 @@ interface apb_if;
   logic pready; // becomes high when slave is ready to accept new data (in this zero wait state assuming slave is always ready to accept data)
   logic   pslverr;
   
-  //A1: assert property(@(posedge pclk) psel |=> penable) else $error("Slave %0h is not ready yet", paddr);
+  //event signals
+  event drvdone; // this event is used to signal from the driver that a drive operation has concluded
+  event mondone; // this event is used to signal from the monitor that a monitoring operation has concluded
     
 endinterface
     
