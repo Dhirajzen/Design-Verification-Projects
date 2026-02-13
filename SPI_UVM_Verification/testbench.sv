@@ -2,36 +2,36 @@
 // or browse Examples
 // In Vivado 2022 don't include this line. On EdaPlaygrounds do.
 import uvm_pkg::*; 
-
 `include "uvm_macros.svh"
+
 `include "test.sv"
 `include "interface.sv"
 
-// Top module in the hierarchy. includes all the testing
-module top_tb;
-
-  // Instantiate the interface
-  spi_dut spi_if();
+module tb;
   
-  // Instantiate the DUT and connect it to the interface
-  top spi_dut ( .clk(spi_if.clk), .rst(spi_if.rst), .wr(spi_if.wr),
-               .din(spi_if.din), .addr(spi_if.addr), .done(spi_if.done),
-               .err(spi_if.err), .dout(spi_if.dout));
-
+  
+  spi_i vif();
+  
+  top dut (.wr(vif.wr), .clk(vif.clk), .rst(vif.rst), .addr(vif.addr), .din(vif.din), .dout(vif.dout), .done(vif.done), .err(vif.err));
+  
   initial begin
-    spi_if.clk <= 0;
-    // Place the interface into the UVM configuration database
-    uvm_config_db#(virtual spi_dut)::set(null, "*", "spi_if", spi_if);
-    // Start the test
-    run_test("spi_test");
+    vif.clk <= 0;
   end
+ 
+  always #10 vif.clk <= ~vif.clk;
+ 
   
-  always #5 spi_if.clk <= ~spi_if.clk; 
   
-  // Dump waves
+  initial begin
+    uvm_config_db#(virtual spi_i)::set(null, "*", "vif", vif);
+    run_test("test");
+   end
+  
+  
   initial begin
     $dumpfile("dump.vcd");
     $dumpvars;
   end
+ 
   
 endmodule

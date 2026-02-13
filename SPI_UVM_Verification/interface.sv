@@ -1,6 +1,6 @@
 
 // the DUT interface
-interface spi_dut;
+interface spi_i;
   logic clk;
   logic rst;
   logic wr;

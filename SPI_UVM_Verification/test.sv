@@ -1,30 +1,40 @@
 
 
 `include "env.sv"
+`include "sequencer.sv"
 
-class spi_test extends uvm_test;
+class test extends uvm_test;
+  `uvm_component_utils(test)
   
-  //use the correct uvm utils macro to register this object
-  `uvm_component_utils (spi_test);
-
-  //add an instance of the environment object to your test (recall that uvm_test encapsulates uvm_env)
-  spi_env env; //added by me
+  function new(input string inst = "test", uvm_component c);
+    super.new(inst,c);
+  endfunction
   
+  env e;
 
-  function new(string name, uvm_component parent);
-    super.new(name, parent);
+  write_data wdata;
+  write_err werr;
+  read_data rdata;
+  read_err rerr;
+  writeb_readb wrrdb;
+  reset_dut rstdut;  
+  
+    
+  virtual function void build_phase(uvm_phase phase);
+    super.build_phase(phase);
+      e      = env::type_id::create("env",this);
+      wdata  = write_data::type_id::create("wdata");
+      werr   = write_err::type_id::create("werr");
+      rdata  = read_data::type_id::create("rdata");
+      wrrdb  = writeb_readb::type_id::create("wrrdb");
+      rerr   = read_err::type_id::create("rerr");
+      rstdut = reset_dut::type_id::create("rstdut");
   endfunction
-
-  function void build_phase(uvm_phase phase);
-    //initialize the environment object using type_id::create("env", this) syntax
-    env = spi_env::type_id::create("env", this); 
-    `uvm_info("TEST", $sformatf("TEST test build Passed"), UVM_MEDIUM);
-    uvm_top.print_topology();
-  endfunction
-
-  task run_phase(uvm_phase phase);
-    env.agent.seq.count = 35;
-     // the test run_phase is empty. The env and agent run_phase take care of things.
+  
+  virtual task run_phase(uvm_phase phase);
+    phase.raise_objection(this);
+    wrrdb.start(e.a.seqr);
+    #20;
+    phase.drop_objection(this);
   endtask
-
 endclass

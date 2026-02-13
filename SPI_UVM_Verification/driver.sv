@@ -1,93 +1,79 @@
-      
-// driver class. gets items from sequencer and drives them into the dut
-class spi_driver extends uvm_driver #(spi_packet);
-
-  `uvm_component_utils(spi_driver)
+class driver extends uvm_driver #(transaction);
+  `uvm_component_utils(driver)
   
-  virtual spi_dut spi_if;
-  event drvdone, mondone; 
-  spi_packet pkt; 
-
-  function new(string name, uvm_component parent);
-    super.new(name, parent);
+  virtual spi_i vif;
+  transaction tr;
+  
+  
+  function new(input string path = "drv", uvm_component parent = null);
+    super.new(path,parent);
   endfunction
-
-  function void build_phase(uvm_phase phase);
-    if(!uvm_config_db#(virtual spi_dut)::get(this, "", "spi_if", spi_if)) begin
-      `uvm_error("", "uvm_config_db::get failed");
-    end
-    `uvm_info("TEST", $sformatf("DRV build Passed"), UVM_MEDIUM);
-  endfunction 
   
-  task reset();
-    spi_if.rst <= 0;
-    spi_if.addr     <= 'h0;
-    spi_if.din      <= 'h0;
-    spi_if.wr       <= 1'b0; 
+ virtual function void build_phase(uvm_phase phase);
+    super.build_phase(phase);
+     tr = transaction::type_id::create("tr");
+      
+      if(!uvm_config_db#(virtual spi_i)::get(this,"","vif",vif))//uvm_test_top.env.agent.drv.aif
+      `uvm_error("drv","Unable to access Interface");
+  endfunction
+  
+  
+  
+  task reset_dut();
+ 
+    repeat(5) 
+    begin
+    vif.rst      <= 1'b1;  ///active high reset
+    vif.addr     <= 'h0;
+    vif.din      <= 'h0;
+    vif.wr       <= 1'b0; 
    `uvm_info("DRV", "System Reset : Start of Simulation", UVM_MEDIUM);
-    repeat(5) @(posedge spi_if.clk);
+    @(posedge vif.clk);
+      end
   endtask
-
-  task run_phase(uvm_phase phase);
-    `uvm_info("TEST", $sformatf("DRV run start"), UVM_MEDIUM);
-    reset();
-    $display("------------------- Reset Done --------------------------------");
-    // drive the packet into the dut
-    forever begin
-	  //call get_next_item() on seq_item_port to get a packet. 2) configure the intreface signals using the packet.
-      seq_item_port.get_next_item(pkt);
-      
-	  // packet pkt received from the seq_item_port is printed here
-      `uvm_info ("DRV", $sformatf("driving item time: %0t, W/R: %0b | Din: %0d | Addr: %0d | Dout: %0d | Done: %0b | Err: %0b", $time, pkt.wr, pkt.din, pkt.addr, pkt.dout, pkt.done, pkt.err), UVM_MEDIUM);
-
-	  //configure the intreface signals using the packet. This involves place
-	  // the values of a and b onto the interface and then toggling the clock.
-      if(pkt.wr == 1'b 1 && pkt.err < 32) begin
-        @(posedge spi_if.clk);
-        spi_if.rst <= 1'b 1;
-        spi_if.wr <= pkt.wr;
-        spi_if.din <= pkt.din;
-        spi_if.addr <= pkt.addr;
-        spi_if.dout <= pkt.dout;
-        spi_if.done <= pkt.done;
-        spi_if.err <= pkt.err;
-        @(posedge spi_if.clk);
-      end
-      else if (pkt.wr == 1'b 0 && pkt.err < 32) begin
-        @(posedge spi_if.clk);
-        spi_if.rst <= 1'b 1;
-        spi_if.wr <= pkt.wr;
-        spi_if.din <= pkt.din;
-        spi_if.addr <= pkt.addr;
-        spi_if.dout <= pkt.dout;
-        spi_if.done <= pkt.done;
-        spi_if.err <= pkt.err;
-        @(posedge spi_if.clk);
-      end
-      else begin
-        @(posedge spi_if.clk);
-        spi_if.rst <= 1'b 1;
-        spi_if.wr <= pkt.wr;
-        spi_if.din <= pkt.din;
-        spi_if.addr <= pkt.addr;
-        spi_if.dout <= pkt.dout;
-        spi_if.done <= pkt.done;
-        spi_if.err <= pkt.err;
-        @(posedge spi_if.clk);
-      end
-      
-	  //call item_done() on the seq_item_port to let the sequencer know you are ready for the next item.
-      seq_item_port.item_done();
-      
-	  
-	  //communicate to the monitor to let it know the signals have been written and the output is ready to received (use drvdone event)
-      //repeat(2)@(posedge spi_if.clk); /
-      //`uvm_info ("write", $sformatf("DRV driving item time: %0t, a=%0b, b=%0b, cmd=%b", $time, pkt.a, pkt.b, pkt.cmd), UVM_MEDIUM)  
-      ->drvdone; 
-	  //wait to make sure that monitor is done reading the output before loading the next item into the dut (you may create a new event, or simply wait some time)
-      @(mondone); 
-
-    end
+  
+  task drive();
+    reset_dut();
+   forever begin
+     
+         seq_item_port.get_next_item(tr);
+     
+     
+                   if(tr.op ==  rstdut)
+                          begin
+                          vif.rst   <= 1'b1;
+                          @(posedge vif.clk);  
+                          end
+ 
+                  else if(tr.op == writed)
+                          begin
+					      vif.rst <= 1'b0;
+                          vif.wr  <= 1'b1;
+                          vif.addr <= tr.addr;
+                          vif.din  <= tr.din;
+                          @(posedge vif.clk);
+                          `uvm_info("DRV", $sformatf("mode : Write addr:%0d din:%0d", vif.addr, vif.din), UVM_NONE);
+                          @(posedge vif.done);
+                          end
+                else if(tr.op ==  readd)
+                          begin
+					      vif.rst  <= 1'b0;
+                          vif.wr   <= 1'b0;
+                          vif.addr <= tr.addr;
+                          vif.din  <= tr.din;
+                          @(posedge vif.clk);
+                            `uvm_info("DRV", $sformatf("mode : Read addr:%0d din:%0d", vif.addr, vif.din), UVM_NONE);
+                          @(posedge vif.done);
+                          end
+       seq_item_port.item_done();
+     
+   end
   endtask
-
+  
+ 
+  virtual task run_phase(uvm_phase phase);
+    drive();
+  endtask
+ 
+  
 endclass

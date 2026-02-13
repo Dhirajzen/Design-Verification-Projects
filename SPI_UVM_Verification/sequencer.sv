@@ -1,61 +1,211 @@
-
-class spi_packet extends uvm_sequence_item;
-
-  `uvm_object_utils(spi_packet);
+typedef enum bit [2:0]   {readd = 0, writed = 1, rstdut = 2, writeerr = 3, readerr = 4} oper_mode;
+ 
+ 
+class transaction extends uvm_sequence_item;
   
-  randc bit wr;
-  randc bit [7:0] din;
-  randc bit [7:0] addr;
-  bit done;
-  bit err;
-  bit [7:0]dout;
-  static int count = 0;
-
-
-  //write some constraints to keep the addr small range (say 0 to 35)
+    rand oper_mode   op;
+         logic wr;
+         logic rst;
+    randc logic [7:0] addr;
+    rand logic [7:0] din;
+         logic [7:0] dout; 
+         logic done;
+         logic err;
   
-  constraint data{addr <= 35;}
-  constraint cmd {if (count <20) wr == 1; }
-  //if your simulator does not support randomize() (such as ModelSim/QuestaSim) use the 
-  // $urandom_range functions in the sequence body (seen bellow) to randomize your data in the range 0 to 20.
-
-  function new (string name = "");
+ 
+        `uvm_object_utils_begin(transaction)
+        `uvm_field_int (wr,UVM_ALL_ON)
+        `uvm_field_int (rst,UVM_ALL_ON)
+        `uvm_field_int (addr,UVM_ALL_ON)
+        `uvm_field_int (din,UVM_ALL_ON)
+        `uvm_field_int (dout,UVM_ALL_ON)
+        `uvm_field_int (done,UVM_ALL_ON)
+        `uvm_field_int (err,UVM_ALL_ON)
+        `uvm_field_enum(oper_mode, op, UVM_DEFAULT)
+        `uvm_object_utils_end
+  
+  constraint addr_c { addr <= 10; }
+  constraint addr_c_err { addr > 31; }
+ 
+  function new(string name = "transaction");
+    super.new(name);
+  endfunction
+ 
+endclass : transaction
+ 
+ 
+///////////////////////////////////////////////////////////////////////
+ 
+ 
+///////////////////write seq
+class write_data extends uvm_sequence#(transaction);
+  `uvm_object_utils(write_data)
+  
+  transaction tr;
+ 
+  function new(string name = "write_data");
     super.new(name);
   endfunction
   
-  function void post_randomize();
-    count = count + 1;
-  endfunction
-
-  endclass: spi_packet
-
-class spi_sequence extends uvm_sequence#(spi_packet);
-
-  `uvm_object_utils(spi_sequence)
+  virtual task body();
+    repeat(15)
+      begin
+        tr = transaction::type_id::create("tr");
+        tr.addr_c.constraint_mode(1);
+        tr.addr_c_err.constraint_mode(0);
+        start_item(tr);
+        assert(tr.randomize);
+        tr.op = writed;
+        finish_item(tr);
+      end
+  endtask
   
-  spi_packet pkt; 
-  int count = 0;
-
-  function new (string name = "");
+ 
+endclass
+//////////////////////////////////////////////////////////
+ 
+ 
+class write_err extends uvm_sequence#(transaction);
+  `uvm_object_utils(write_err)
+  
+  transaction tr;
+ 
+  function new(string name = "write_err");
     super.new(name);
   endfunction
-
-  task body;
-	// body of the sequence. Where you must generate 5 random patterns for each of the 5 commands
-    `uvm_info ("BASE_SEQ", $sformatf ("Generating sequence"), UVM_MEDIUM); 
-    //pkt = salu_packet::type_id::create("pkt", this); 
+  
+  virtual task body();
+    repeat(15)
+      begin
+        tr = transaction::type_id::create("tr");
+        tr.addr_c_err.constraint_mode(1);
+        tr.addr_c.constraint_mode(0);
+        start_item(tr);
+        assert(tr.randomize);
+        tr.op = writed;
+        finish_item(tr);
+      end
+  endtask
+  
+ 
+endclass
+ 
+///////////////////////////////////////////////////////////////
+ 
+class read_data extends uvm_sequence#(transaction);
+  `uvm_object_utils(read_data)
+  
+  transaction tr;
+ 
+  function new(string name = "read_data");
+    super.new(name);
+  endfunction
+  
+  virtual task body();
+    repeat(15)
+      begin
+        tr = transaction::type_id::create("tr");
+        tr.addr_c.constraint_mode(1);
+        tr.addr_c_err.constraint_mode(0);
+        start_item(tr);
+        assert(tr.randomize);
+        tr.op = readd;
+        finish_item(tr);
+      end
+  endtask
+  
+ 
+endclass
+/////////////////////////////////////////////////////////////////////
+ 
+class read_err extends uvm_sequence#(transaction);
+  `uvm_object_utils(read_err)
+  
+  transaction tr;
+ 
+  function new(string name = "read_err");
+    super.new(name);
+  endfunction
+  
+  virtual task body();
+    repeat(15)
+      begin
+        tr = transaction::type_id::create("tr");
+        tr.addr_c.constraint_mode(0);
+        tr.addr_c_err.constraint_mode(1);
+        start_item(tr);
+        assert(tr.randomize);
+        tr.op = readd;
+        finish_item(tr);
+      end
+  endtask
+  
+ 
+endclass
+/////////////////////////////////////////////////////////////////
+ 
+class reset_dut extends uvm_sequence#(transaction);
+  `uvm_object_utils(reset_dut)
+  
+  transaction tr;
+ 
+  function new(string name = "reset_dut");
+    super.new(name);
+  endfunction
+  
+  virtual task body();
+    repeat(15)
+      begin
+        tr = transaction::type_id::create("tr");
+        tr.addr_c.constraint_mode(1);
+        tr.addr_c_err.constraint_mode(0);
+        start_item(tr);
+        assert(tr.randomize);
+        tr.op = rstdut;
+        finish_item(tr);
+      end
+  endtask
+  
+ 
+endclass
+////////////////////////////////////////////////////////////
+ 
+ 
+ 
+class writeb_readb extends uvm_sequence#(transaction);
+  `uvm_object_utils(writeb_readb)
+  
+  transaction tr;
+ 
+  function new(string name = "writeb_readb");
+    super.new(name);
+  endfunction
+  
+  virtual task body();
+     
+    repeat(10)
+      begin
+        tr = transaction::type_id::create("tr");
+        tr.addr_c.constraint_mode(1);
+        tr.addr_c_err.constraint_mode(0);
+        start_item(tr);
+        assert(tr.randomize);
+        tr.op = writed;
+        finish_item(tr);  
+      end
+        
+    repeat(10)
+      begin
+        tr = transaction::type_id::create("tr");
+        tr.addr_c.constraint_mode(1);
+        tr.addr_c_err.constraint_mode(0);
+        start_item(tr);
+        assert(tr.randomize);
+        tr.op = readd;
+        finish_item(tr);
+      end   
     
-    for (int i = 0; i < count; i++) begin
-       pkt = spi_packet::type_id::create("pkt");
-		  //you need to 1) create a transaction packet object, 2) randomize its fields, 
-		  // you will need to call start_item() and finish_item() on your transaction object 
-		  // before and after randomization/configuration respectively;
-		  // you should use the i variable to configure the cmd field. Remember only a and b are randomized.
-          
-          start_item(pkt); 
-          assert(pkt.randomize());
-          finish_item(pkt); 
-	end
-  endtask: body
-
-endclass: spi_sequence
+  endtask
+  
+ 
+endclass

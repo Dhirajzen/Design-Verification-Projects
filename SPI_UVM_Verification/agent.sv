@@ -1,59 +1,41 @@
 // The uvm sequence, transaction item, and driver are in these files:
-`include "sequencer.sv"
+`include "config.sv"
 `include "monitor.sv"
 `include "driver.sv"
 
-// The agent contains sequencer, driver, and monitor
-class spi_agent extends uvm_agent;
-   
-   //register agent using uvm_macros
-  `uvm_component_utils(spi_agent);
-
-  //declare the monitor and driver objects
-  spi_driver drv; 
-  spi_monitor mon; 
-  spi_sequence seq; 
-
+class agent extends uvm_agent;
+`uvm_component_utils(agent)
+  
+  spi_config cfg;
+ 
+function new(input string inst = "agent", uvm_component parent = null);
+  super.new(inst,parent);
+endfunction
+ 
+ driver d;
+ uvm_sequencer#(transaction) seqr;
+ mon m;
+ 
+ 
+virtual function void build_phase(uvm_phase phase);
+  super.build_phase(phase);
+    cfg =  spi_config::type_id::create("cfg"); 
+    m = mon::type_id::create("m",this);
+    
+    if(cfg.is_active == UVM_ACTIVE)
+    begin   
+    d = driver::type_id::create("d",this);
+    seqr = uvm_sequencer#(transaction)::type_id::create("seqr", this);
+    end
   
   
-  // our sequencer initialized
-  uvm_sequencer#(spi_packet) sequencer;
-
-  function new(string name, uvm_component parent);
-    super.new(name, parent);
-  endfunction
-
-  function void build_phase(uvm_phase phase);
-    // driver, sequencer, and monitor objects initialized
-	//initialize driver, sequencer, and monitor objects
-    drv = spi_driver::type_id::create("drv", this); 
-    mon = spi_monitor::type_id::create("mon", this); 
-    seq = spi_sequence::type_id::create("seq", this); 
-    sequencer = uvm_sequencer#(spi_packet)::type_id::create("sequencer", this); 
-    `uvm_info("TEST", $sformatf("Agent build Passed"), UVM_MEDIUM); 
-  endfunction    
-
-  // connect_phase of the agent
-  function void connect_phase(uvm_phase phase);
-	//connect the driver and the sequencer
-    drv.seq_item_port.connect(sequencer.seq_item_export);
-	// make the monitor and driver drvdone events point to the same thing
-    mon.drvdone = drv.drvdone;
-    mon.mondone = drv.mondone; 
-    `uvm_info("TEST", $sformatf("Agent connect Passed"), UVM_MEDIUM);
-  endfunction
-
-  task run_phase(uvm_phase phase);
-    // We raise objection to keep the test from completing
-    phase.raise_objection(this);
-    `uvm_info("TEST", $sformatf("Agent run Started"), UVM_MEDIUM);
-
-
-	//create sequence and start it.
-    seq.start(sequencer);
-    wait(mon.mondone.triggered);
-    // We drop objection to allow the test to complete
-    phase.drop_objection(this);
-  endtask
-
+endfunction
+ 
+virtual function void connect_phase(uvm_phase phase);
+  super.connect_phase(phase);
+    if(cfg.is_active == UVM_ACTIVE) begin  
+      d.seq_item_port.connect(seqr.seq_item_export);
+    end
+endfunction
+ 
 endclass
