@@ -1,6 +1,3 @@
-// Code your testbench here
-// or browse Examples
-// In Vivado 2022 don't include this line. On EdaPlaygrounds do.
 import uvm_pkg::*; 
 `include "uvm_macros.svh"
 
