@@ -36,13 +36,13 @@ class apb_scoreboard extends uvm_scoreboard;
           `uvm_info("SCO", $sformatf("DATA matched Data: %0d Address: %0d", t.prdata, t.paddr), UVM_MEDIUM);
           end else begin
           err ++;
-          `uvm_info("SCO", $sformatf("DATA MISS-MATCHED  Data: %0d Address: %0d", t.prdata, t.paddr), UVM_MEDIUM);
+          `uvm_error("SCO", $sformatf("DATA MISS-MATCHED  Data: %0d Address: %0d", t.prdata, t.paddr));
         end
       end 
       
       else 
       begin
-        `uvm_info("SCO", $sformatf("SLV Error Dectected"), UVM_MEDIUM);
+        `uvm_error("SCO", $sformatf("SLV Error Dectected"));
       end
       //$display("------------------------------------------------------------");
       //-> sconext;
