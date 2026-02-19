@@ -42,8 +42,8 @@ class apb_agent extends uvm_agent;
     drv.seq_item_port.connect(sequencer.seq_item_export);//added by me
 	// make the monitor and driver drvdone events point to the same thing
     //monitor.drvdone = driver.drvdone; // added by pro is wrong
-    mon.drvdone = drv.drvdone; // added by me
-    mon.mondone = drv.mondone; // added by me
+    // mon.drvdone = drv.drvdone; // added by me
+    // mon.mondone = drv.mondone; // added by me
     mon.mon_analysis_port.connect(cov.apb_cover_imp); //added by me
     `uvm_info("TEST", $sformatf("Agent connect Passed"), UVM_MEDIUM); //added by me
   endfunction
@@ -60,5 +60,6 @@ class apb_agent extends uvm_agent;
     // We drop objection to allow the test to complete
     phase.drop_objection(this);
   endtask
+
 
 endclass
