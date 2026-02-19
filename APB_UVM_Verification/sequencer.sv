@@ -13,12 +13,12 @@ class apb_packet extends uvm_sequence_item;
   bit   pslverr;
   static int rand_count = 0;
  
-  // constraint data { //paddr inside {[0:255]};
-  //   pwdata dist{[0:31] :/13, [32:63] :/ 13,
-  //               [64:95] :/13,[96:127] :/13,
-  //               [128:159] :/13, [160:191] :/13,
-  //               [192:223] :/13, [224:255] :/13};
-  //              }
+  constraint data { //paddr inside {[0:255]};
+    pwdata dist{[0:31] :/13, [32:63] :/ 13,
+                [64:95] :/13,[96:127] :/13,
+                [128:159] :/13, [160:191] :/13,
+                [192:223] :/13, [224:255] :/13};
+               }
   // constraint write_count { if (rand_count <200) pwrite == 1;
   //                  else
   //                  	pwrite == 0;}
