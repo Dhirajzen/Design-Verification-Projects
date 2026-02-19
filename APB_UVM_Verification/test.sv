@@ -23,7 +23,13 @@ class apb_test extends uvm_test;
   endfunction
 
   task run_phase(uvm_phase phase);
+<<<<<<< HEAD
     env.agent.seq.count = 312;
+=======
+    env.agent.seq.count = 200;
+    env.agent.write_seq.count = 200;
+    env.agent.read_seq.count = 200;
+>>>>>>> 49717f7 (Enhance APB agent and sequences: add write/read sequences, adjust counts, and clean up code)
      // the test run_phase is empty. The env and agent run_phase take care of things.
   endtask
 
