@@ -34,6 +34,8 @@ class apb_coverage extends uvm_subscriber#(apb_packet);
     option.at_least = 200;
     }
     
+    coverpoint pkt.pslverr;
+
   endgroup
   
   
