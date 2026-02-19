@@ -24,8 +24,8 @@ class apb_test extends uvm_test;
 
   task run_phase(uvm_phase phase);
     env.agent.seq.count = 200;
-    env.agent.write_seq.count = 200;
-    env.agent.read_seq.count = 200;
+    env.agent.write_seq.count = 300;
+    env.agent.read_seq.count = 300;
      // the test run_phase is empty. The env and agent run_phase take care of things.
   endtask
 
