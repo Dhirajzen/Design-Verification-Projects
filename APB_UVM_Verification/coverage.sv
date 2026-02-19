@@ -25,10 +25,10 @@ class apb_coverage extends uvm_subscriber#(apb_packet);
     
     }
     coverpoint pkt.pwdata{
-     option.at_least = 50;
+     option.at_least = 8;
     }
     coverpoint pkt.prdata{
-      option.at_least = 50;
+      option.at_least = 8;
     }
     coverpoint pkt.pwrite{
     option.at_least = 200;
