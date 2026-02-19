@@ -81,28 +81,30 @@ module apb (
   
   // checking valid value of add
   
-  reg add_value = 0;
+  // reg add_value = 0;
   
-  always @(*) begin
-    if ($isunknown(paddr))
-      add_value = 1'b 0;
-    else
-      add_value = 1'b 1;
-  end
+  // always @(*) begin
+  //   if ($isunknown(paddr))
+  //     add_value = 1'b 0;
+  //   else
+  //     add_value = 1'b 1;
+  // end
   
-  reg data_value = 0;
+  // reg data_value = 0;
   
-  always @(*) begin
-    if ($isunknown(pwdata))
-      data_value = 1'b 0;
-    else
-      data_value = 1'b 1;
-  end
+  // always @(*) begin
+  //   if ($isunknown(pwdata))
+  //     data_value = 1'b 0;
+  //   else
+  //     data_value = 1'b 1;
+  // end
 
-  assign addr_err = (((nstate == write) || (nstate == read)) && (paddr > 200)) ? 1'b 1 : 1'b 0;
-  assign addv_err = (((nstate == write) || (nstate == read)) && add_value) ? 1'b 1 : 1'b 0;
-  assign data_err = (((nstate == write) || (nstate == read)) && data_value) ? 1'b 1 : 1'b 0; 
-  
+  assign addr_err = (((state == write) || (state == read)) && (paddr > 200)) ? 1'b 1 : 1'b 0;
+  // assign addv_err = (((nstate == write) || (nstate == read)) && add_value) ? 1'b 1 : 1'b 0;
+  // assign data_err = (((nstate == write) || (nstate == read)) && data_value) ? 1'b 1 : 1'b 0; 
+  assign addv_err = (((state==write)||(state==read)) && $isunknown(paddr));
+  assign data_err = (((state==write)||(state==read)) && $isunknown(pwdata));
+
   assign pslverr = (psel == 1'b 1 && penable == 1'b 1) ? (addr_err || addv_err || data_err) : 1'b 0; 
   
 endmodule

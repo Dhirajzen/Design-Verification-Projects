@@ -23,6 +23,7 @@ class apb_packet extends uvm_sequence_item;
   //                  else
   //                  	pwrite == 0;}
 
+  // constraint addr_c { paddr > 255; }
 
   function new (string name = "apb_packet");
     super.new(name);
@@ -114,4 +115,5 @@ class apb_read_seq extends uvm_sequence#(apb_packet);
   endtask: body
 
 endclass: apb_read_seq
+
 
