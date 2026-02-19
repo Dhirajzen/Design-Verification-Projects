@@ -43,21 +43,11 @@ class apb_agent extends uvm_agent;
   // connect_phase of the agent
   function void connect_phase(uvm_phase phase);
 	//connect the driver and the sequencer
-<<<<<<< HEAD
-    drv.seq_item_port.connect(sequencer.seq_item_export);//added by me
-	// make the monitor and driver drvdone events point to the same thing
-    //monitor.drvdone = driver.drvdone; // added by pro is wrong
-    // mon.drvdone = drv.drvdone; // added by me
-    // mon.mondone = drv.mondone; // added by me
-    mon.mon_analysis_port.connect(cov.apb_cover_imp); //added by me
-    `uvm_info("TEST", $sformatf("Agent connect Passed"), UVM_MEDIUM); //added by me
-=======
     drv.seq_item_port.connect(sequencer.seq_item_export);
 
     mon.mon_analysis_port.connect(cov.apb_cover_imp); 
 
     `uvm_info("TEST", $sformatf("Agent connect Passed"), UVM_MEDIUM); 
->>>>>>> 49717f7 (Enhance APB agent and sequences: add write/read sequences, adjust counts, and clean up code)
   endfunction
 
   task run_phase(uvm_phase phase);
