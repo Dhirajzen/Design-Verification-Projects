@@ -45,7 +45,7 @@ class write_data extends uvm_sequence#(spi_transaction);
   endfunction
   
   virtual task body();
-    repeat(15)
+    repeat(150)
       begin
         tr = spi_transaction::type_id::create("tr");
         tr.addr_c.constraint_mode(1);
@@ -99,7 +99,7 @@ class read_data extends uvm_sequence#(spi_transaction);
   endfunction
   
   virtual task body();
-    repeat(15)
+    repeat(150)
       begin
         tr = spi_transaction::type_id::create("tr");
         tr.addr_c.constraint_mode(1);
@@ -180,7 +180,7 @@ class writeb_readb extends uvm_sequence#(spi_transaction);
   
   virtual task body();
      
-    repeat(10)
+    repeat(100)
       begin
         tr = spi_transaction::type_id::create("tr");
         tr.addr_c.constraint_mode(1);
@@ -191,7 +191,7 @@ class writeb_readb extends uvm_sequence#(spi_transaction);
         finish_item(tr);  
       end
         
-    repeat(10)
+    repeat(100)
       begin
         tr = spi_transaction::type_id::create("tr");
         tr.addr_c.constraint_mode(1);
