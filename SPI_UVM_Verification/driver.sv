@@ -1,8 +1,8 @@
-class driver extends uvm_driver #(transaction);
+class driver extends uvm_driver #(spi_transaction);
   `uvm_component_utils(driver)
   
   virtual spi_i vif;
-  transaction tr;
+  spi_transaction tr;
   
   
   function new(input string path = "drv", uvm_component parent = null);
@@ -11,7 +11,7 @@ class driver extends uvm_driver #(transaction);
   
  virtual function void build_phase(uvm_phase phase);
     super.build_phase(phase);
-     tr = transaction::type_id::create("tr");
+     tr = spi_transaction::type_id::create("tr");
       
       if(!uvm_config_db#(virtual spi_i)::get(this,"","vif",vif))//uvm_test_top.env.agent.drv.aif
       `uvm_error("drv","Unable to access Interface");

@@ -1,7 +1,7 @@
 typedef enum bit [2:0]   {readd = 0, writed = 1, rstdut = 2, writeerr = 3, readerr = 4} oper_mode;
  
  
-class transaction extends uvm_sequence_item;
+class spi_transaction extends uvm_sequence_item;
   
     rand oper_mode   op;
          logic       wr;
@@ -13,7 +13,7 @@ class transaction extends uvm_sequence_item;
          logic err;
   
  
-        `uvm_object_utils_begin(transaction)
+        `uvm_object_utils_begin(spi_transaction)
         `uvm_field_int (wr,UVM_ALL_ON)
         `uvm_field_int (rst,UVM_ALL_ON)
         `uvm_field_int (addr,UVM_ALL_ON)
@@ -27,21 +27,21 @@ class transaction extends uvm_sequence_item;
   constraint addr_c { addr <= 10; }
   constraint addr_c_err { addr > 31; }
  
-  function new(string name = "transaction");
+  function new(string name = "spi_transaction");
     super.new(name);
   endfunction
  
-endclass : transaction
+endclass : spi_transaction
  
  
 ///////////////////////////////////////////////////////////////////////
  
  
 ///////////////////write seq
-class write_data extends uvm_sequence#(transaction);
+class write_data extends uvm_sequence#(spi_transaction);
   `uvm_object_utils(write_data)
   
-  transaction tr;
+  spi_transaction tr;
  
   function new(string name = "write_data");
     super.new(name);
@@ -50,7 +50,7 @@ class write_data extends uvm_sequence#(transaction);
   virtual task body();
     repeat(15)
       begin
-        tr = transaction::type_id::create("tr");
+        tr = spi_transaction::type_id::create("tr");
         tr.addr_c.constraint_mode(1);
         tr.addr_c_err.constraint_mode(0);
         start_item(tr);
@@ -65,10 +65,10 @@ endclass
 //////////////////////////////////////////////////////////
  
  
-class write_err extends uvm_sequence#(transaction);
+class write_err extends uvm_sequence#(spi_transaction);
   `uvm_object_utils(write_err)
   
-  transaction tr;
+  spi_transaction tr;
  
   function new(string name = "write_err");
     super.new(name);
@@ -77,7 +77,7 @@ class write_err extends uvm_sequence#(transaction);
   virtual task body();
     repeat(15)
       begin
-        tr = transaction::type_id::create("tr");
+        tr = spi_transaction::type_id::create("tr");
         tr.addr_c_err.constraint_mode(1);
         tr.addr_c.constraint_mode(0);
         start_item(tr);
@@ -92,10 +92,10 @@ endclass
  
 ///////////////////////////////////////////////////////////////
  
-class read_data extends uvm_sequence#(transaction);
+class read_data extends uvm_sequence#(spi_transaction);
   `uvm_object_utils(read_data)
   
-  transaction tr;
+  spi_transaction tr;
  
   function new(string name = "read_data");
     super.new(name);
@@ -104,7 +104,7 @@ class read_data extends uvm_sequence#(transaction);
   virtual task body();
     repeat(15)
       begin
-        tr = transaction::type_id::create("tr");
+        tr = spi_transaction::type_id::create("tr");
         tr.addr_c.constraint_mode(1);
         tr.addr_c_err.constraint_mode(0);
         start_item(tr);
@@ -118,10 +118,10 @@ class read_data extends uvm_sequence#(transaction);
 endclass
 /////////////////////////////////////////////////////////////////////
  
-class read_err extends uvm_sequence#(transaction);
+class read_err extends uvm_sequence#(spi_transaction);
   `uvm_object_utils(read_err)
   
-  transaction tr;
+  spi_transaction tr;
  
   function new(string name = "read_err");
     super.new(name);
@@ -130,7 +130,7 @@ class read_err extends uvm_sequence#(transaction);
   virtual task body();
     repeat(15)
       begin
-        tr = transaction::type_id::create("tr");
+        tr = spi_transaction::type_id::create("tr");
         tr.addr_c.constraint_mode(0);
         tr.addr_c_err.constraint_mode(1);
         start_item(tr);
@@ -144,10 +144,10 @@ class read_err extends uvm_sequence#(transaction);
 endclass
 /////////////////////////////////////////////////////////////////
  
-class reset_dut extends uvm_sequence#(transaction);
+class reset_dut extends uvm_sequence#(spi_transaction);
   `uvm_object_utils(reset_dut)
   
-  transaction tr;
+  spi_transaction tr;
  
   function new(string name = "reset_dut");
     super.new(name);
@@ -156,7 +156,7 @@ class reset_dut extends uvm_sequence#(transaction);
   virtual task body();
     repeat(15)
       begin
-        tr = transaction::type_id::create("tr");
+        tr = spi_transaction::type_id::create("tr");
         tr.addr_c.constraint_mode(1);
         tr.addr_c_err.constraint_mode(0);
         start_item(tr);
@@ -172,10 +172,10 @@ endclass
  
  
  
-class writeb_readb extends uvm_sequence#(transaction);
+class writeb_readb extends uvm_sequence#(spi_transaction);
   `uvm_object_utils(writeb_readb)
   
-  transaction tr;
+  spi_transaction tr;
  
   function new(string name = "writeb_readb");
     super.new(name);
@@ -185,7 +185,7 @@ class writeb_readb extends uvm_sequence#(transaction);
      
     repeat(10)
       begin
-        tr = transaction::type_id::create("tr");
+        tr = spi_transaction::type_id::create("tr");
         tr.addr_c.constraint_mode(1);
         tr.addr_c_err.constraint_mode(0);
         start_item(tr);
@@ -196,7 +196,7 @@ class writeb_readb extends uvm_sequence#(transaction);
         
     repeat(10)
       begin
-        tr = transaction::type_id::create("tr");
+        tr = spi_transaction::type_id::create("tr");
         tr.addr_c.constraint_mode(1);
         tr.addr_c_err.constraint_mode(0);
         start_item(tr);

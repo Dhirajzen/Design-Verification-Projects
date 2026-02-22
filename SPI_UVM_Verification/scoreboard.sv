@@ -1,7 +1,7 @@
 class sco extends uvm_scoreboard;
 `uvm_component_utils(sco)
  
-  uvm_analysis_imp#(transaction,sco) recv;
+  uvm_analysis_imp#(spi_transaction,sco) recv;
   bit [31:0] arr[32] = '{default:0};
   bit [31:0] addr    = 0;
   bit [31:0] data_rd = 0;
@@ -18,7 +18,7 @@ class sco extends uvm_scoreboard;
     endfunction
     
     
-  virtual function void write(transaction tr);
+  virtual function void write(spi_transaction tr);
     if(tr.op == rstdut)
               begin
                 `uvm_info("SCO", "SYSTEM RESET DETECTED", UVM_NONE);

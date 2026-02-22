@@ -1,4 +1,4 @@
-// The uvm sequence, transaction item, and driver are in these files:
+// The uvm sequence, spi_transaction item, and driver are in these files:
 `include "config.sv"
 `include "monitor.sv"
 `include "driver.sv"
@@ -13,7 +13,7 @@ function new(input string inst = "agent", uvm_component parent = null);
 endfunction
  
  driver d;
- uvm_sequencer#(transaction) seqr;
+ uvm_sequencer#(spi_transaction) seqr;
  mon m;
  
  
@@ -25,7 +25,7 @@ virtual function void build_phase(uvm_phase phase);
     if(cfg.is_active == UVM_ACTIVE)
     begin   
     d = driver::type_id::create("d",this);
-    seqr = uvm_sequencer#(transaction)::type_id::create("seqr", this);
+    seqr = uvm_sequencer#(spi_transaction)::type_id::create("seqr", this);
     end
   
   

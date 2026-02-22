@@ -1,8 +1,8 @@
 class mon extends uvm_monitor;
 `uvm_component_utils(mon)
  
-uvm_analysis_port#(transaction) send;
-transaction tr;
+uvm_analysis_port#(spi_transaction) send;
+spi_transaction tr;
 virtual spi_i vif;
  
     function new(input string inst = "mon", uvm_component parent = null);
@@ -11,7 +11,7 @@ virtual spi_i vif;
     
     virtual function void build_phase(uvm_phase phase);
     super.build_phase(phase);
-    tr = transaction::type_id::create("tr");
+    tr = spi_transaction::type_id::create("tr");
     send = new("send", this);
       if(!uvm_config_db#(virtual spi_i)::get(this,"","vif",vif))//uvm_test_top.env.agent.drv.aif
         `uvm_error("MON","Unable to access Interface");
