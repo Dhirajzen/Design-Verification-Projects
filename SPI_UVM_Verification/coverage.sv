@@ -8,7 +8,7 @@ class spi_coverage extends uvm_subscriber;
   
   function new(string name, uvm_component parent);
     super.new(name, parent);
-   
+   check = new();
   endfunction
   
 
@@ -36,7 +36,7 @@ class spi_coverage extends uvm_subscriber;
   function void build_phase(uvm_phase phase);
     super.build_phase(phase);
     cov_imp = new("cov_imp", this);
-     check = new();
+     
     `uvm_info("TEST", $sformatf("COVER build Passed"), UVM_MEDIUM);
   endfunction
   
