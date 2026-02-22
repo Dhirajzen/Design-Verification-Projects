@@ -14,10 +14,12 @@ typedef enum bit [2:0]   {readd = 0, writed = 1, rstdut = 2, writeerr = 3, reade
   `include "driver.sv"
   `include "monitor.sv"
   `include "scoreboard.sv"
-
+  `include "coverage.sv"
+  
   // Agent/env/test on top
   `include "agent.sv"
   `include "env.sv"
   `include "test.sv"
+  
 
 endpackage
