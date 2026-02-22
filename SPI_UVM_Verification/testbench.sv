@@ -1,8 +1,7 @@
-import uvm_pkg::*; 
-`include "uvm_macros.svh"
 
-`include "test.sv"
-`include "interface.sv"
+
+import tb_pkg::*;
+
 
 module tb;
   

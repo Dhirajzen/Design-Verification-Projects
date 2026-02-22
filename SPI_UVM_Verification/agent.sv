@@ -1,7 +1,4 @@
 // The uvm sequence, spi_transaction item, and driver are in these files:
-`include "config.sv"
-`include "monitor.sv"
-`include "driver.sv"
 
 class agent extends uvm_agent;
 `uvm_component_utils(agent)
