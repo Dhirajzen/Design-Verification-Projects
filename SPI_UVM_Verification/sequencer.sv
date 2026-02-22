@@ -4,8 +4,8 @@ typedef enum bit [2:0]   {readd = 0, writed = 1, rstdut = 2, writeerr = 3, reade
 class transaction extends uvm_sequence_item;
   
     rand oper_mode   op;
-         logic wr;
-         logic rst;
+         logic       wr;
+         logic       rst;
     randc logic [7:0] addr;
     rand logic [7:0] din;
          logic [7:0] dout; 
