@@ -30,6 +30,7 @@ virtual spi_i vif;
       else if (!vif.rst && vif.wr)
          begin
           @(posedge vif.done);
+          tr.wr    = vif.wr;
           tr.op     = writed;
           tr.din    = vif.din;
           tr.addr   = vif.addr;
@@ -40,6 +41,7 @@ virtual spi_i vif;
       else if (!vif.rst && !vif.wr)
          begin
           @(posedge vif.done);
+          tr.wr    = vif.wr;
           tr.op     = readd; 
           tr.addr   = vif.addr;
           tr.err    = vif.err;
