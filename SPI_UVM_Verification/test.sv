@@ -32,8 +32,18 @@ class test extends uvm_test;
   
   virtual task run_phase(uvm_phase phase);
     phase.raise_objection(this);
-    wrrdb.start(e.a.seqr);
-    #20;
+      wrrdb.start(e.a.seqr);
+      #20;
+      wdata.start(e.a.seqr);
+      #20;
+      werr.start(e.a.seqr);
+      #20;
+      rdata.start(e.a.seqr);
+      #20;
+      rerr.start(e.a.seqr);
+      #20;
+      rstdut.start(e.a.seqr);
+      #20;
     phase.drop_objection(this);
   endtask
 endclass
