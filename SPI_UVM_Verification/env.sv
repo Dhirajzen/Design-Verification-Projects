@@ -22,7 +22,7 @@ class env extends uvm_env;
   virtual function void connect_phase(uvm_phase phase);
     super.connect_phase(phase);
     a.m.send.connect(s.recv);
-    a.m.send.connect(cov.recv);
+    a.m.send.connect(cov.cov_imp);
     endfunction
   
 endclass
