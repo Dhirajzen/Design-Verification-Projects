@@ -16,20 +16,20 @@ class spi_coverage extends uvm_subscriber;
         option.per_instance = 1;
         option.auto_bin_max = 8;
 
-        coverpoint vif.wr {
+        coverpoint tr.wr {
             bins wr_0 = {0};
             bins wr_1 = {1};
         }
-        coverpoint vif.addr {
+        coverpoint tr.addr {
             option.at_least = 8;
         }
-        coverpoint vif.din {
+        coverpoint tr.din {
             option.at_least = 8;
         }
 
-        coverpoint vif.err;
+        coverpoint tr.err;
 
-        cross vif.wr, vif.addr, vif.din;
+        cross tr.wr, tr.addr, tr.din;
     endgroup
   
 
