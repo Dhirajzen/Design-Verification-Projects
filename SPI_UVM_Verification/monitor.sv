@@ -1,5 +1,3 @@
-`include "sequencer.sv"
-
 class mon extends uvm_monitor;
 `uvm_component_utils(mon)
  
