@@ -1,4 +1,4 @@
-class spi_coverage extends uvm_subscriber;
+class spi_coverage extends uvm_subscriber#(spi_transaction);
   
   `uvm_component_utils(spi_coverage)
 
