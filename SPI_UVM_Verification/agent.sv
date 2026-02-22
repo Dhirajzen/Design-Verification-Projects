@@ -18,7 +18,7 @@ virtual function void build_phase(uvm_phase phase);
   super.build_phase(phase);
     cfg =  spi_config::type_id::create("cfg"); 
     m = mon::type_id::create("m",this);
-    
+
     if(cfg.is_active == UVM_ACTIVE)
     begin   
     d = driver::type_id::create("d",this);
@@ -33,6 +33,7 @@ virtual function void connect_phase(uvm_phase phase);
     if(cfg.is_active == UVM_ACTIVE) begin  
       d.seq_item_port.connect(seqr.seq_item_export);
     end
+
 endfunction
  
 endclass

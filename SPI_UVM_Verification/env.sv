@@ -9,16 +9,20 @@ class env extends uvm_env;
   
   agent a;
   sco s;
+  spi_coverage cov;
   
   virtual function void build_phase(uvm_phase phase);
     super.build_phase(phase);
       a = agent::type_id::create("a",this);
       s = sco::type_id::create("s", this);
+      cov = spi_coverage::type_id::create("cov", this);
+
     endfunction
     
   virtual function void connect_phase(uvm_phase phase);
     super.connect_phase(phase);
     a.m.send.connect(s.recv);
+    a.m.send.connect(cov.recv);
     endfunction
   
 endclass
