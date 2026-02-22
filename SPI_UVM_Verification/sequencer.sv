@@ -48,7 +48,7 @@ class write_data extends uvm_sequence#(spi_transaction);
     repeat(150)
       begin
         tr = spi_transaction::type_id::create("tr");
-        tr.addr_c.constraint_mode(1);
+        tr.addr_c.constraint_mode(0);
         tr.addr_c_err.constraint_mode(0);
         start_item(tr);
         assert(tr.randomize);
@@ -102,7 +102,7 @@ class read_data extends uvm_sequence#(spi_transaction);
     repeat(150)
       begin
         tr = spi_transaction::type_id::create("tr");
-        tr.addr_c.constraint_mode(1);
+        tr.addr_c.constraint_mode(0);
         tr.addr_c_err.constraint_mode(0);
         start_item(tr);
         assert(tr.randomize);
@@ -183,7 +183,7 @@ class writeb_readb extends uvm_sequence#(spi_transaction);
     repeat(100)
       begin
         tr = spi_transaction::type_id::create("tr");
-        tr.addr_c.constraint_mode(1);
+        tr.addr_c.constraint_mode(0);
         tr.addr_c_err.constraint_mode(0);
         start_item(tr);
         assert(tr.randomize);
@@ -194,7 +194,7 @@ class writeb_readb extends uvm_sequence#(spi_transaction);
     repeat(100)
       begin
         tr = spi_transaction::type_id::create("tr");
-        tr.addr_c.constraint_mode(1);
+        tr.addr_c.constraint_mode(0);
         tr.addr_c_err.constraint_mode(0);
         start_item(tr);
         assert(tr.randomize);
