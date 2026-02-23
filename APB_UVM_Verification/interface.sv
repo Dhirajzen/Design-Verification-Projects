@@ -57,10 +57,10 @@ interface apb_if;
     (psel && penable && !pready) |=> $stable(pwdata)
   ) else $error("APB: PWDATA changed during ACCESS wait");
 
-  // A7) Read data should be stable when transfer completes (sampled when PREADY=1 in ACCESS)
-  apb_prdata_stable_on_complete: assert property (
-    (psel && penable && pready && !pwrite) |-> $stable(prdata)
-  ) else $error("APB: PRDATA not stable at read completion");
+  // A7) Read data should be stable during ACCESS when waiting for PREADY
+  apb_prdata_stable_while_wait: assert property (
+    (psel && penable && !pready && !pwrite) |=> $stable(prdata)
+  ) else $error("APB: PRDATA changed during ACCESS wait");
 
   // A8) End of transfer behavior: after completion, PENABLE should drop next cycle (go back to SETUP or IDLE)
   apb_penable_drops_after_complete: assert property (
