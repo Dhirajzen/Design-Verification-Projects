@@ -41,7 +41,7 @@ interface apb_if;
     apb_wait |=> ($stable(paddr) && $stable(pwrite) && $stable(pwdata) && $stable(psel) && $stable(penable))
   ) else $error("APB: Signals changed while waiting for PREADY");
 
-  // A4) If slave is 0-wait (your design usually responds immediately), then ACCESS completes in 1 cycle.
+  // A4) If slave is 0-wait (design usually responds immediately), then ACCESS completes in 1 cycle.
   // If you truly want to allow wait states, comment this out.
   apb_zero_wait: assert property (
     (psel && penable) |-> pready
@@ -52,11 +52,6 @@ interface apb_if;
     pslverr |-> (psel && penable)
   ) else $error("APB: PSLVERR asserted outside ACCESS");
 
-  // A6) Write data must be stable during ACCESS (especially when waiting)
-  apb_pwdata_stable_in_access: assert property (
-    (psel && penable && !pready) |=> $stable(pwdata)
-  ) else $error("APB: PWDATA changed during ACCESS wait");
-
   // A7) Read data should be stable during ACCESS when waiting for PREADY
   apb_prdata_stable_while_wait: assert property (
     (psel && penable && !pready && !pwrite) |=> $stable(prdata)
@@ -66,6 +61,7 @@ interface apb_if;
   apb_penable_drops_after_complete: assert property (
     (psel && penable && pready) |=> !penable
   ) else $error("APB: PENABLE did not drop after transfer completion");
+  
 endinterface
     
   
