@@ -19,6 +19,10 @@ interface apb_if;
 
   // APB HANDSHAKE / TIMING ASSERTIONS
 
+  // Clocking for SVA
+  default clocking cb @(posedge pclk); endclocking
+  default disable iff (!prst);
+
   // A1) PENABLE can only be high when PSEL is high (ACCESS implies selected)
   apb_penable_implies_psel: assert property (penable |-> psel)
     else $error("APB: PENABLE high without PSEL");
