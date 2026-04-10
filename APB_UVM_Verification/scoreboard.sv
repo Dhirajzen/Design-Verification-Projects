@@ -14,6 +14,7 @@ class apb_scoreboard extends uvm_scoreboard;
   uvm_analysis_imp #(apb_packet, apb_scoreboard) ap_imp; // added by me 
 	
 	function void build_phase (uvm_phase phase);
+    super.build_phase(phase);
 		ap_imp = new ("ap_imp", this);
       `uvm_info("SCO", $sformatf("SCO build Passed"), UVM_MEDIUM);
 	endfunction
