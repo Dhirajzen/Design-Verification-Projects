@@ -206,7 +206,11 @@ begin
                       end
                       else
                         begin
+`ifdef INJECT_ADDR_BUG
+                         mem[datain[7:0] + 1] <= datain[15:8];  // deliberate bug for checker validation (make bug)
+`else
                          mem[datain[7:0]]  <= datain[15:8];
+`endif
                          state <= idle;
                          count <= 0;
                          op_done <= 1'b1;
