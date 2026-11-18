@@ -17,6 +17,7 @@ class test extends uvm_test;
   read_err rerr;
   writeb_readb wrrdb;
   reset_dut rstdut;  
+  write_corner_data wcorner;  // coverage closure: data corner patterns
   read_data rd_after_rst;   // readback after reset: memory contents must survive reset
   spi_config cfg;
   
@@ -33,6 +34,7 @@ class test extends uvm_test;
       wrrdb  = writeb_readb::type_id::create("wrrdb");
       rerr   = read_err::type_id::create("rerr");
       rstdut = reset_dut::type_id::create("rstdut");
+      wcorner = write_corner_data::type_id::create("wcorner");
       rd_after_rst = read_data::type_id::create("rd_after_rst");
   endfunction
   
@@ -41,6 +43,8 @@ class test extends uvm_test;
       wrrdb.start(e.a.seqr);
       #20;
       wdata.start(e.a.seqr);
+      #20;
+      wcorner.start(e.a.seqr);
       #20;
       werr.start(e.a.seqr);
       #20;

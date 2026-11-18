@@ -207,4 +207,39 @@ class writeb_readb extends uvm_sequence#(spi_transaction);
   endtask
   
  
-endclass
+endclass
+////////////////////////////////////////////////////////////
+// Coverage closure: random 8-bit data rarely hits 0x00 / 0xFF in a few hundred
+// writes (the first regression missed both bins). Directed corner patterns are
+// written to random legal addresses and read straight back.
+class write_corner_data extends uvm_sequence#(spi_transaction);
+  `uvm_object_utils(write_corner_data)
+
+  spi_transaction tr;
+  bit [7:0] patterns[4] = '{8'h00, 8'hFF, 8'h55, 8'hAA};
+
+  function new(string name = "write_corner_data");
+    super.new(name);
+  endfunction
+
+  virtual task body();
+    bit [7:0] a;
+    foreach (patterns[i])
+      begin
+        tr = spi_transaction::type_id::create("tr");
+        tr.addr_c.constraint_mode(1);
+        tr.addr_c_err.constraint_mode(0);
+        start_item(tr);
+        if (!tr.randomize() with { din == patterns[i]; }) `uvm_fatal("SEQ", "randomize() failed")
+        tr.op = writed;
+        a = tr.addr;
+        finish_item(tr);
+
+        tr = spi_transaction::type_id::create("tr");   // read the same address back
+        start_item(tr);
+        tr.op   = readd;
+        tr.addr = a;
+        finish_item(tr);
+      end
+  endtask
+endclass
