@@ -17,10 +17,15 @@ class test extends uvm_test;
   read_err rerr;
   writeb_readb wrrdb;
   reset_dut rstdut;  
+  read_data rd_after_rst;   // readback after reset: memory contents must survive reset
+  spi_config cfg;
   
     
   virtual function void build_phase(uvm_phase phase);
     super.build_phase(phase);
+      cfg    = spi_config::type_id::create("cfg");
+      cfg.is_active = UVM_ACTIVE;
+      uvm_config_db#(spi_config)::set(this, "env.a", "cfg", cfg);
       e      = env::type_id::create("env",this);
       wdata  = write_data::type_id::create("wdata");
       werr   = write_err::type_id::create("werr");
@@ -28,6 +33,7 @@ class test extends uvm_test;
       wrrdb  = writeb_readb::type_id::create("wrrdb");
       rerr   = read_err::type_id::create("rerr");
       rstdut = reset_dut::type_id::create("rstdut");
+      rd_after_rst = read_data::type_id::create("rd_after_rst");
   endfunction
   
   virtual task run_phase(uvm_phase phase);
@@ -44,6 +50,10 @@ class test extends uvm_test;
       #20;
       rstdut.start(e.a.seqr);
       #20;
+      // Reset recovery: the slave memory is not cleared by reset, so every
+      // read after reset must still return the last data written before it.
+      rd_after_rst.start(e.a.seqr);
+      #20;
     phase.drop_objection(this);
   endtask
-endclass
+endclass
