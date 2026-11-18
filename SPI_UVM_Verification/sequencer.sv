@@ -21,7 +21,9 @@
         `uvm_field_enum(oper_mode, op, UVM_DEFAULT)
         `uvm_object_utils_end
   
-  constraint addr_c { addr <= 10; }
+  // Legal address map is 0..31 (32 x 8 memory). The two constraints are mutually
+  // exclusive: good-path sequences enable addr_c, error sequences enable addr_c_err.
+  constraint addr_c     { addr inside {[0:31]}; }
   constraint addr_c_err { addr > 31; }
  
   function new(string name = "spi_transaction");
@@ -48,10 +50,10 @@ class write_data extends uvm_sequence#(spi_transaction);
     repeat(150)
       begin
         tr = spi_transaction::type_id::create("tr");
-        tr.addr_c.constraint_mode(0);
+        tr.addr_c.constraint_mode(1);   // legal addresses only
         tr.addr_c_err.constraint_mode(0);
         start_item(tr);
-        assert(tr.randomize);
+        if (!tr.randomize()) `uvm_fatal("SEQ", "randomize() failed")  // not assert(): $assertoff would skip the call
         tr.op = writed;
         finish_item(tr);
       end
@@ -78,7 +80,7 @@ class write_err extends uvm_sequence#(spi_transaction);
         tr.addr_c_err.constraint_mode(1);
         tr.addr_c.constraint_mode(0);
         start_item(tr);
-        assert(tr.randomize);
+        if (!tr.randomize()) `uvm_fatal("SEQ", "randomize() failed")  // not assert(): $assertoff would skip the call
         tr.op = writed;
         finish_item(tr);
       end
@@ -102,10 +104,10 @@ class read_data extends uvm_sequence#(spi_transaction);
     repeat(150)
       begin
         tr = spi_transaction::type_id::create("tr");
-        tr.addr_c.constraint_mode(0);
+        tr.addr_c.constraint_mode(1);   // legal addresses only
         tr.addr_c_err.constraint_mode(0);
         start_item(tr);
-        assert(tr.randomize);
+        if (!tr.randomize()) `uvm_fatal("SEQ", "randomize() failed")  // not assert(): $assertoff would skip the call
         tr.op = readd;
         finish_item(tr);
       end
@@ -131,7 +133,7 @@ class read_err extends uvm_sequence#(spi_transaction);
         tr.addr_c.constraint_mode(0);
         tr.addr_c_err.constraint_mode(1);
         start_item(tr);
-        assert(tr.randomize);
+        if (!tr.randomize()) `uvm_fatal("SEQ", "randomize() failed")  // not assert(): $assertoff would skip the call
         tr.op = readd;
         finish_item(tr);
       end
@@ -157,7 +159,7 @@ class reset_dut extends uvm_sequence#(spi_transaction);
         tr.addr_c.constraint_mode(1);
         tr.addr_c_err.constraint_mode(0);
         start_item(tr);
-        assert(tr.randomize);
+        if (!tr.randomize()) `uvm_fatal("SEQ", "randomize() failed")  // not assert(): $assertoff would skip the call
         tr.op = rstdut;
         finish_item(tr);
       end
@@ -183,10 +185,10 @@ class writeb_readb extends uvm_sequence#(spi_transaction);
     repeat(100)
       begin
         tr = spi_transaction::type_id::create("tr");
-        tr.addr_c.constraint_mode(0);
+        tr.addr_c.constraint_mode(1);   // legal addresses only
         tr.addr_c_err.constraint_mode(0);
         start_item(tr);
-        assert(tr.randomize);
+        if (!tr.randomize()) `uvm_fatal("SEQ", "randomize() failed")  // not assert(): $assertoff would skip the call
         tr.op = writed;
         finish_item(tr);  
       end
@@ -194,10 +196,10 @@ class writeb_readb extends uvm_sequence#(spi_transaction);
     repeat(100)
       begin
         tr = spi_transaction::type_id::create("tr");
-        tr.addr_c.constraint_mode(0);
+        tr.addr_c.constraint_mode(1);   // legal addresses only
         tr.addr_c_err.constraint_mode(0);
         start_item(tr);
-        assert(tr.randomize);
+        if (!tr.randomize()) `uvm_fatal("SEQ", "randomize() failed")  // not assert(): $assertoff would skip the call
         tr.op = readd;
         finish_item(tr);
       end   
@@ -205,4 +207,4 @@ class writeb_readb extends uvm_sequence#(spi_transaction);
   endtask
   
  
-endclass
+endclass
