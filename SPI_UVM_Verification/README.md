@@ -20,7 +20,7 @@ bins hit. Each of three injected RTL bugs makes the regression fail.
 ```
      request side (clk domain)                        SPI pins
     +--------------------------+  CS (active low)  +----------------------------+
-    | start  wr  addr  din     |------------------>| 2-flop sync  -> edge detect |
+    | start  wr  addr  din     |------------------>| clock = SCLK, reset = CS    |
     | cpol cpha clk_div        |  SCLK             |                             |
 --->|      spi_intf (master)   |------------------>|     spi_mem (slave)         |
 <---| dout  done  err          |  MOSI             |     mem[0:31] x 8           |
@@ -50,20 +50,25 @@ bins hit. Each of three injected RTL bugs makes the regression fail.
 
 **Request rules:** pulse `start` for one cycle with `wr/addr/din/cpol/cpha/clk_div`
 valid, and hold them until `done`. `clk_div` is the SCLK half period in clk
-cycles, legal 4 to 15 (the slave's synchronizers need 3 cycles to see an
-edge). `addr > 31` or `clk_div < 4` is rejected: `err = 1`, `done = 1`, and CS
+cycles, legal 4 to 15. The lower limit is the master's spec for its fastest
+SCLK (clk / 8); the slave itself has no minimum because SCLK is its clock.
+`addr > 31` or `clk_div < 4` is rejected: `err = 1`, `done = 1`, and CS
 never falls.
 
 **Master timing:** SCLK moves to the new CPOL idle level while CS is high. CS
 falls one cycle later. Setup (CS fall to first edge) and hold (last edge to CS
 rise) are each one half period.
 
-**Slave:** runs on the system clock and oversamples SCLK, CS and MOSI through
-2-flop synchronizers, then edge-detects SCLK and classifies each edge as
-leading or trailing from CPOL. On a read, the data byte is loaded right after
-the 8th sample, in time for the first data shift edge in either CPHA. Reset
-clears both FSMs but **not the memory**, so data written before reset must
-read back after it.
+**Slave:** like a real SPI device it has no system clock. SCLK is its clock
+and CS is its asynchronous reset. It clocks off `sck = sclk ^ cpol ^ cpha`,
+whose rising edge is the sample edge in every mode (MOSI shifts in, the bit
+counter advances, a write commits) and whose falling edge is the shift edge
+(the next MISO bit is driven). On a read, the shift edge after the 8th sample
+drives data bit 7, in time for the master's next sample edge in either CPHA.
+CPOL/CPHA only change while CS is high, so any `sck` edge they cause is held
+off by the reset. Reset (system `rst`, which raises CS, or CS itself) clears
+both FSMs but **not the memory**, so data written before reset must read back
+after it.
 
 ## 2. Testbench architecture
 
@@ -168,9 +173,11 @@ the SPI clocking and modes were added.
 - **Mid-frame events.** Reset and CS abort in the middle of a frame are not
   stimulated (the slave does discard a partial frame when CS rises, but no
   test proves it).
-- **Real clock-domain crossing.** SCLK is generated from the system clock, so
-  the slave's synchronizers never see a truly asynchronous edge. A CDC tool
-  run and a test with an external SCLK source would close this.
+- **Timing at the pins.** The simulation is zero-delay, so setup and hold of
+  MOSI and MISO around SCLK edges (and the MISO round-trip delay back to the
+  master, which samples it on `clk`) are not checked. That needs STA or
+  gate-level simulation with delays. If the slave's memory were also read
+  from a system bus, the SCLK-to-system crossing would need CDC checks.
 - **Register interface.** Requests come from pins, not a bus. A real
   controller would have APB registers, FIFOs, an interrupt and a DMA request,
   plus a RAL model.
@@ -190,7 +197,7 @@ the pip package names the binary `verilator-cli`, so add `VERILATOR=verilator-cl
 ```
 make UVM_HOME=/path/to/uvm-verilator/src            # build and run, prints PASSED or FAILED
 make run TEST=test SEED=3 UVM_HOME=...
-make bug BUG=ADDR UVM_HOME=...                       # injected RTL bug, must FAIL (ADDR | MODE | CPHA)
+make bug BUG=ADDR UVM_HOME=...                       # injected RTL bug, must FAIL (ADDR | MODE | CPHA | SLAVE_EDGE)
 ```
 
 Commercial simulators use the same file list; the commands are at the top of

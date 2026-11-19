@@ -169,13 +169,21 @@ endmodule
 //////////////////////////////////////////////////////////////////////////////
 // SPI slave with a 32 x 8 memory
 //
-// The slave runs on the system clock and oversamples SCLK, CS and MOSI through
-// 2-flop synchronizers (in a real system they come from off chip and are
-// asynchronous to clk). Synchronizer latency is 2-3 cycles, which is why the
-// master's SCLK half period must be at least 4 clk cycles.
+// Like a real SPI device, the slave has no system clock: SCLK is its clock and
+// CS is its reset. The two edges of SCLK do the two jobs:
+//   sample edge : MOSI is shifted in, the bit counter advances, writes commit
+//   shift edge  : the next MISO bit is driven
+// Which physical SCLK edge is the sample edge depends on the mode, so the slave
+// clocks off sck = sclk ^ cpol ^ cpha. Its rising edge is always the sample edge:
+//   mode 0 (0,0): sck = sclk   -> sample on SCLK rising  (leading)
+//   mode 1 (0,1): sck = ~sclk  -> sample on SCLK falling (trailing)
+//   mode 2 (1,0): sck = ~sclk  -> sample on SCLK falling (leading)
+//   mode 3 (1,1): sck = sclk   -> sample on SCLK rising  (trailing)
+// CPOL/CPHA are mode straps that only change while CS is high; any sck edge
+// they cause then is ignored because CS holds the slave in reset.
+// The memory is in the SCLK domain too and is not cleared (no reset reaches it).
 //////////////////////////////////////////////////////////////////////////////
 module spi_mem (
-  input  logic clk, rst,
   input  logic cpol, cpha,          // mode straps
   input  logic cs, sclk, mosi,
   output logic miso
@@ -183,59 +191,51 @@ module spi_mem (
 
   logic [7:0] mem [0:31] = '{default: 8'h00};   // not cleared by reset
 
-  logic [2:0] sclk_s, cs_s;
-  logic [1:0] mosi_s;
-  always_ff @(posedge clk) begin
-    sclk_s <= {sclk_s[1:0], sclk};
-    cs_s   <= {cs_s[1:0],   cs};
-    mosi_s <= {mosi_s[0],   mosi};
-  end
+`ifdef INJECT_SLAVE_EDGE_BUG
+  wire sck = ~(sclk ^ cpol ^ cpha);              // deliberate bug: slave samples on the shift edge
+`else
+  wire sck =   sclk ^ cpol ^ cpha;
+`endif
 
-  wire cs_low    = !cs_s[1];
-  wire cs_fall   =  cs_s[2] && !cs_s[1];
-  wire sclk_edge =  sclk_s[2] != sclk_s[1];
-  wire lead      =  sclk_edge && (sclk_s[1] != cpol);
-  wire trail     =  sclk_edge && (sclk_s[1] == cpol);
-  wire sample    =  cpha ? trail : lead;
-  wire shift     =  cpha ? lead  : trail;
-  wire mosi_bit  =  mosi_s[1];                   // aligned with sclk_s[1]
+  logic [6:0] rx;                                // MOSI bits received so far (shift register)
+  logic [7:0] cmd;                               // command byte: {wr, 2'b00, addr[4:0]}
+  logic [4:0] cnt;                               // bits sampled in this frame, 0..16
+  logic [7:0] tx;                                // MISO bits still to send
 
-  logic [7:0] rx, tx, cmd;
-  logic [4:0] cnt;                               // bits sampled in this frame
-
-  always_ff @(posedge clk) begin
-    if (rst) begin
-      cnt  <= '0;
-      rx   <= '0;
-      tx   <= '0;
-      cmd  <= '0;
-      miso <= 1'b0;
-    end
-    else if (!cs_low || cs_fall) begin           // CS high (idle or aborted frame), or new frame
-      cnt  <= '0;
-      tx   <= '0;
-      miso <= 1'b0;
+  // Sample edge: shift MOSI in, latch the command, commit a write
+  always_ff @(posedge sck or posedge cs) begin
+    if (cs) begin                                // CS high: idle or aborted frame
+      cnt <= '0;
+      rx  <= '0;
     end
     else begin
-      if (sample) begin
-        rx  <= {rx[6:0], mosi_bit};
-        cnt <= cnt + 1;
-        if (cnt == 5'd7) begin                   // command byte complete
-          cmd <= {rx[6:0], mosi_bit};
-          if (!rx[6])                            // read: load data for the second byte
-            tx <= mem[{rx[3:0], mosi_bit}];
-        end
-        if (cnt == 5'd15 && cmd[7])              // write: data byte complete
+      rx  <= {rx[5:0], mosi};
+      cnt <= cnt + 1;
+      if (cnt == 5'd7)                           // command byte complete
+        cmd <= {rx, mosi};
+      if (cnt == 5'd15 && cmd[7])                // write: data byte complete
 `ifdef INJECT_ADDR_BUG
-          mem[cmd[4:0] + 5'd1] <= {rx[6:0], mosi_bit};   // deliberate bug for checker validation
+        mem[cmd[4:0] + 5'd1] <= {rx, mosi};      // deliberate bug for checker validation
 `else
-          mem[cmd[4:0]] <= {rx[6:0], mosi_bit};
+        mem[cmd[4:0]] <= {rx, mosi};
 `endif
-      end
-      if (shift) begin
-        miso <= tx[7];
-        tx   <= {tx[6:0], 1'b0};
-      end
+    end
+  end
+
+  // Shift edge: drive the next MISO bit. After the 8th sample edge of a read,
+  // the first shift edge drives data bit 7 and loads the rest of the byte.
+  always_ff @(negedge sck or posedge cs) begin
+    if (cs) begin
+      miso <= 1'b0;
+      tx   <= '0;
+    end
+    else if (cnt == 5'd8 && !cmd[7]) begin       // read: start the data byte
+      miso <= mem[cmd[4:0]][7];
+      tx   <= {mem[cmd[4:0]][6:0], 1'b0};
+    end
+    else begin
+      miso <= tx[7];
+      tx   <= {tx[6:0], 1'b0};
     end
   end
 endmodule
@@ -252,5 +252,5 @@ module top (
 );
   spi_intf intf     (.clk, .rst, .start, .wr, .addr, .din, .cpol, .cpha, .clk_div,
                      .dout, .done, .err, .cs, .sclk, .mosi, .miso);
-  spi_mem  mem_inst (.clk, .rst, .cpol, .cpha, .cs, .sclk, .mosi, .miso);
+  spi_mem  mem_inst (.cpol, .cpha, .cs, .sclk, .mosi, .miso);
 endmodule
