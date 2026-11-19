@@ -10,6 +10,14 @@ interface spi_i;
   logic err;
   logic [7:0] dout;
 
+  // request handshake and SPI mode
+  logic       start;
+  logic       cpol, cpha;
+  logic [3:0] clk_div;
+
+  // SPI pins (observed by the passive serial monitor)
+  logic cs, sclk, mosi, miso;
+
   default clocking cb @(posedge clk); endclocking
   default disable iff (rst);
 
@@ -22,4 +30,4 @@ a_err_implies_done: assert property (err |-> done)
   else $error("SPI: err asserted without done");
 
 
-endinterface
+endinterface

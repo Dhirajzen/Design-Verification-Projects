@@ -29,19 +29,23 @@ virtual spi_i vif;
         `uvm_info("MON", "SYSTEM RESET DETECTED", UVM_HIGH);
         send.write(tr);
         end
-      else
+      else if (vif.start)
          begin
+          // The request is captured on the start pulse (the DUT latches it on
+          // the same edge); the response is captured when done rises.
+          tr.wr      = vif.wr;
+          tr.op      = vif.wr ? writed : readd;
+          tr.din     = vif.din;
+          tr.addr    = vif.addr;
+          tr.cpol    = vif.cpol;
+          tr.cpha    = vif.cpha;
+          tr.clk_div = vif.clk_div;
           @(posedge vif.done);
-          // Classify the operation when it completes, not when it starts:
-          // at the start wr can still hold the previous item's value.
-          tr.wr     = vif.wr;
-          tr.op     = vif.wr ? writed : readd;
-          tr.din    = vif.din;
-          tr.addr   = vif.addr;
-          tr.err    = vif.err;
-          tr.dout   = vif.dout;
-          `uvm_info("MON", $sformatf("DATA %s addr:%0d wdata:%0d rdata:%0d err:%0d",
-                                     tr.wr ? "WRITE" : "READ", tr.addr, tr.din, tr.dout, tr.err), UVM_MEDIUM);
+          tr.err     = vif.err;
+          tr.dout    = vif.dout;
+          `uvm_info("MON", $sformatf("DATA %s addr:%0d wdata:%0d rdata:%0d err:%0d mode:%0d div:%0d",
+                                     tr.wr ? "WRITE" : "READ", tr.addr, tr.din, tr.dout, tr.err,
+                                     {tr.cpol, tr.cpha}, tr.clk_div), UVM_MEDIUM);
           send.write(tr);
          end
     end

@@ -23,6 +23,7 @@ class env extends uvm_env;
     super.connect_phase(phase);
     a.m.send.connect(s.recv);
     a.m.send.connect(cov.cov_imp);
+    a.sm.send.connect(s.ser_recv);
     endfunction
   
-endclass
+endclass

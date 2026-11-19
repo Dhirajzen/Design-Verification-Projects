@@ -17,7 +17,8 @@ class test extends uvm_test;
   read_err rerr;
   writeb_readb wrrdb;
   reset_dut rstdut;  
-  write_corner_data wcorner;  // coverage closure: data corner patterns
+  write_corner_data wcorner;
+  cfg_err cerr;               // illegal SCLK divider must be rejected  // coverage closure: data corner patterns
   read_data rd_after_rst;   // readback after reset: memory contents must survive reset
   spi_config cfg;
   
@@ -35,6 +36,7 @@ class test extends uvm_test;
       rerr   = read_err::type_id::create("rerr");
       rstdut = reset_dut::type_id::create("rstdut");
       wcorner = write_corner_data::type_id::create("wcorner");
+      cerr    = cfg_err::type_id::create("cerr");
       rd_after_rst = read_data::type_id::create("rd_after_rst");
   endfunction
   
@@ -51,6 +53,8 @@ class test extends uvm_test;
       rdata.start(e.a.seqr);
       #20;
       rerr.start(e.a.seqr);
+      #20;
+      cerr.start(e.a.seqr);
       #20;
       rstdut.start(e.a.seqr);
       #20;
