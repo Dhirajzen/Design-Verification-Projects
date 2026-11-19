@@ -13,6 +13,8 @@ class spi_coverage extends uvm_subscriber#(spi_transaction);
   int unsigned wr_hit[32], rd_hit[32];
   int unsigned wr_illegal, rd_illegal, wr_err, rd_err;
   int unsigned din_zero, din_ones, din_alt;
+  int unsigned mode_op[4][2];          // [mode][wr] for legal transfers
+  int unsigned div_min, div_max, err_div;
 
   function void build_phase(uvm_phase phase);
     super.build_phase(phase);
@@ -50,8 +52,27 @@ class spi_coverage extends uvm_subscriber#(spi_transaction);
             bins err = {1};
         }
 
+        // F10: all four SPI modes
+        cp_mode : coverpoint {tr.cpol, tr.cpha} iff (!tr.err) {
+            bins mode0 = {2'b00};
+            bins mode1 = {2'b01};
+            bins mode2 = {2'b10};
+            bins mode3 = {2'b11};
+        }
+
+        // F11: SCLK divider corners (fastest and slowest legal SCLK) and illegal values
+        cp_div : coverpoint tr.clk_div {
+            bins fastest = {4};
+            bins mid     = {[5:14]};
+            bins slowest = {15};
+            bins illegal = {[0:3]};
+        }
+
         // Every legal address written AND read; illegal range hit in both directions
         x_op_addr : cross cp_op, cp_addr;
+
+        // Write and read in every mode
+        x_op_mode : cross cp_op, cp_mode;
 
         // Error seen on both a write and a read
         x_op_err  : cross cp_op, cp_err;
@@ -68,15 +89,19 @@ class spi_coverage extends uvm_subscriber#(spi_transaction);
         if (t.op == rstdut) return;
         tr = t;
         check.sample();
-        if (t.addr < 32) begin
+        if (t.addr < 32 && !t.err) begin
           if (t.wr) wr_hit[t.addr]++; else rd_hit[t.addr]++;
         end
-        else begin
+        else if (t.addr >= 32) begin
           if (t.wr) wr_illegal++; else rd_illegal++;
         end
         if (t.err) begin
           if (t.wr) wr_err++; else rd_err++;
         end
+        if (!t.err) mode_op[{t.cpol, t.cpha}][t.wr]++;
+        if (!t.err && t.clk_div == 4)  div_min++;
+        if (!t.err && t.clk_div == 15) div_max++;
+        if (t.clk_div < 4 && t.addr < 32) err_div++;
         if (t.wr && t.addr < 32) begin
           if (t.din == 8'h00) din_zero++;
           if (t.din == 8'hFF) din_ones++;
@@ -93,7 +118,14 @@ class spi_coverage extends uvm_subscriber#(spi_transaction);
           if (wr_hit[a]) hit++; else missed = {missed, $sformatf(" wr@%0d", a)};
           if (rd_hit[a]) hit++; else missed = {missed, $sformatf(" rd@%0d", a)};
         end
-        total += 7;
+        foreach (mode_op[m, w]) begin
+          total++;
+          if (mode_op[m][w]) hit++; else missed = {missed, $sformatf(" %s@mode%0d", w ? "wr" : "rd", m)};
+        end
+        total += 10;
+        if (div_min)    hit++; else missed = {missed, " div=4"};
+        if (div_max)    hit++; else missed = {missed, " div=15"};
+        if (err_div)    hit++; else missed = {missed, " err_div"};
         if (wr_illegal) hit++; else missed = {missed, " wr@illegal"};
         if (rd_illegal) hit++; else missed = {missed, " rd@illegal"};
         if (wr_err)     hit++; else missed = {missed, " wr_err"};
