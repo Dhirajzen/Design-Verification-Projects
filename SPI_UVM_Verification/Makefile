@@ -6,7 +6,8 @@
 #
 #   make UVM_HOME=/path/to/uvm-verilator/src            # build + run the regression test
 #   make run TEST=test SEED=7
-#   make bug UVM_HOME=...                                # rebuild with an injected RTL bug, expect FAIL
+#   make bug BUG=ADDR UVM_HOME=...                       # rebuild with an injected RTL bug, expect FAIL
+#                                                        # BUG = ADDR | MODE | CPHA (see design.sv)
 #
 # Commercial simulators (same file list, standard UVM):
 #   vcs   -sverilog -ntb_opts uvm-1.2 -timescale=1ns/1ps $(SRCS) -top tb && ./simv +UVM_TESTNAME=test
@@ -41,11 +42,15 @@ run: build
 	@grep -q "UVM_ERROR :    0" sim_$(TEST).log && grep -q "UVM_FATAL :    0" sim_$(TEST).log \
 	  && echo "*** TEST $(TEST) PASSED ***" || (echo "*** TEST $(TEST) FAILED ***"; exit 1)
 
-# Bug injection: the slave stores write data one address too high.
-# The scoreboard must catch this; if this target "passes", the checker is broken.
+# Bug injection. Each bug must make the regression FAIL; if one "passes",
+# the checker meant to catch it is broken.
+#   ADDR : slave stores write data one address too high  -> readback compare
+#   MODE : master idles SCLK low regardless of CPOL      -> SVA a_sclk_idle, frame checks
+#   CPHA : master ignores CPHA (always samples leading)  -> SVA a_mosi_stable_on_sample, frame checks
+BUG ?= ADDR
 bug:
 	$(MAKE) clean
-	$(MAKE) run DEFINES=+define+INJECT_ADDR_BUG || echo "Expected failure: injected bug was caught"
+	$(MAKE) run DEFINES=+define+INJECT_$(BUG)_BUG || echo "Expected failure: injected $(BUG) bug was caught"
 
 clean:
 	rm -rf obj_dir sim_*.log
