@@ -11,7 +11,7 @@ SPI timing rules.
 
 **Result (seed 1):** 0 UVM errors. 658 SPI frames checked bit for bit, 404
 readbacks compared, 40 rejected requests checked, 82 of 82 planned coverage
-bins hit. Each of three injected RTL bugs makes the regression fail.
+bins hit. Each of four injected RTL bugs makes the regression fail.
 
 ---
 
@@ -147,17 +147,19 @@ Seeds 1 to 5: all pass with 0 errors and 82/82 bins.
 | `ADDR`: slave stores write data one address too high | slave data path | Readback compare (404) and MISO byte in the frame check (404). The MOSI side of every write frame is still correct, which localises the bug to the slave. | 808 |
 | `MODE`: master idles SCLK low regardless of CPOL | master, CPOL | SVA `a_sclk_idle` and `a_mosi_stable_on_sample`. MOSI-side frame mismatches appear only in mode 2 frames; MISO and readback mismatches then spread to every mode, because those reads return data that was written wrong. | 2880 |
 | `CPHA`: master samples on the leading edge whatever CPHA is | master, CPHA | SVA `a_mosi_stable_on_sample`. MOSI-side frame mismatches appear only in CPHA = 1 frames (modes 1 and 3), which points straight at the phase logic. | 1984 |
+| `SLAVE_EDGE`: slave samples MOSI on the shift edge instead of the sample edge | slave, edge select | MISO byte in the frame check and the readback compare, in all four modes. MOSI at the pins is correct in every frame and no master SVA fires, which localises the bug to the slave. | 598 |
 
 Every assertion added in `checker.sv` was also mutated once and confirmed to fire.
 
-**A bug the environment does not catch.** A first version of the CPHA bug
-made the *slave* sample on the wrong edge. It passed: the slave oversamples
-SCLK and MOSI through identical 2-flop synchronizers, so in zero-delay RTL
-simulation it sees the new MOSI bit on the same edge it is launched and still
-gets the right data. On silicon that is a hold-time race. Catching it needs a
-timing-aware check (MOSI must be stable for some time before and after the
-sample edge, measured in SCLK time), gate-level simulation with delays, or
-STA, not more functional stimulus.
+**The wrong-edge slave, before and after.** The first version of the slave
+oversampled SCLK and MOSI through identical 2-flop synchronizers on the system
+clock. A slave sampling on the wrong edge then *passed*: in zero-delay RTL
+simulation it saw the new MOSI bit on the same edge it was launched and still
+got the right data. With the slave clocked by SCLK, the same bug (`make bug
+BUG=SLAVE_EDGE`) shifts the slave's view of the frame by one edge and fails
+with 598 errors. What simulation still cannot see is a slave that samples on
+the right edge but too close to it: setup and hold around SCLK edges need STA
+or gate-level simulation with delays.
 
 ### History
 
