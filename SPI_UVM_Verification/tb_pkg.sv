@@ -13,6 +13,7 @@ typedef enum bit [2:0]   {readd = 0, writed = 1, rstdut = 2, writeerr = 3, reade
   `include "sequencer.sv"
   `include "driver.sv"
   `include "monitor.sv"
+  `include "serial_monitor.sv"
   `include "scoreboard.sv"
   `include "coverage.sv"
   

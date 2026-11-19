@@ -12,12 +12,18 @@ endfunction
  driver d;
  uvm_sequencer#(spi_transaction) seqr;
  mon m;
+ spi_serial_mon sm;   // passive: watches the SPI pins in active and passive mode
  
  
 virtual function void build_phase(uvm_phase phase);
   super.build_phase(phase);
-    cfg =  spi_config::type_id::create("cfg"); 
+    // Take the configuration from the test so the agent can be made passive
+    // (monitor only) when this env is reused at subsystem/SoC level.
+    if(!uvm_config_db#(spi_config)::get(this, "", "cfg", cfg))
+      cfg = spi_config::type_id::create("cfg");   // default: active
+    `uvm_info("AGT", $sformatf("agent is %s", cfg.is_active.name()), UVM_LOW)
     m = mon::type_id::create("m",this);
+    sm = spi_serial_mon::type_id::create("sm",this);
 
     if(cfg.is_active == UVM_ACTIVE)
     begin   
@@ -36,4 +42,4 @@ virtual function void connect_phase(uvm_phase phase);
 
 endfunction
  
-endclass
+endclass

@@ -9,7 +9,9 @@ module tb;
   
   spi_i vif();
   
-  top dut (.wr(vif.wr), .clk(vif.clk), .rst(vif.rst), .addr(vif.addr), .din(vif.din), .dout(vif.dout), .done(vif.done), .err(vif.err));
+  top dut (.wr(vif.wr), .clk(vif.clk), .rst(vif.rst), .addr(vif.addr), .din(vif.din), .dout(vif.dout), .done(vif.done), .err(vif.err),
+           .start(vif.start), .cpol(vif.cpol), .cpha(vif.cpha), .clk_div(vif.clk_div),
+           .cs(vif.cs), .sclk(vif.sclk), .mosi(vif.mosi), .miso(vif.miso));
   
   initial begin
     vif.clk <= 0;
