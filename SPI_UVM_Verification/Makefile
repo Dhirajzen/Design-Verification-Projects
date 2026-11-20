@@ -7,7 +7,7 @@
 #   make UVM_HOME=/path/to/uvm-verilator/src            # build + run the regression test
 #   make run TEST=test SEED=7
 #   make bug BUG=ADDR UVM_HOME=...                       # rebuild with an injected RTL bug, expect FAIL
-#                                                        # BUG = ADDR | MODE | CPHA (see design.sv)
+#                                                        # BUG = ADDR | MODE | CPHA | SLAVE_EDGE (see design.sv)
 #
 # Commercial simulators (same file list, standard UVM):
 #   vcs   -sverilog -ntb_opts uvm-1.2 -timescale=1ns/1ps $(SRCS) -top tb && ./simv +UVM_TESTNAME=test
@@ -47,6 +47,7 @@ run: build
 #   ADDR : slave stores write data one address too high  -> readback compare
 #   MODE : master idles SCLK low regardless of CPOL      -> SVA a_sclk_idle, frame checks
 #   CPHA : master ignores CPHA (always samples leading)  -> SVA a_mosi_stable_on_sample, frame checks
+#   SLAVE_EDGE : slave samples MOSI on the shift edge    -> see README section 4
 BUG ?= ADDR
 bug:
 	$(MAKE) clean

@@ -11,7 +11,7 @@ SPI timing rules.
 
 **Result (seed 1):** 0 UVM errors. 658 SPI frames checked bit for bit, 404
 readbacks compared, 40 rejected requests checked, 82 of 82 planned coverage
-bins hit. Each of three injected RTL bugs makes the regression fail.
+bins hit. Each of four injected RTL bugs makes the regression fail.
 
 ---
 
@@ -20,7 +20,7 @@ bins hit. Each of three injected RTL bugs makes the regression fail.
 ```
      request side (clk domain)                        SPI pins
     +--------------------------+  CS (active low)  +----------------------------+
-    | start  wr  addr  din     |------------------>| 2-flop sync  -> edge detect |
+    | start  wr  addr  din     |------------------>| clock = SCLK, reset = CS    |
     | cpol cpha clk_div        |  SCLK             |                             |
 --->|      spi_intf (master)   |------------------>|     spi_mem (slave)         |
 <---| dout  done  err          |  MOSI             |     mem[0:31] x 8           |
@@ -50,20 +50,25 @@ bins hit. Each of three injected RTL bugs makes the regression fail.
 
 **Request rules:** pulse `start` for one cycle with `wr/addr/din/cpol/cpha/clk_div`
 valid, and hold them until `done`. `clk_div` is the SCLK half period in clk
-cycles, legal 4 to 15 (the slave's synchronizers need 3 cycles to see an
-edge). `addr > 31` or `clk_div < 4` is rejected: `err = 1`, `done = 1`, and CS
+cycles, legal 4 to 15. The lower limit is the master's spec for its fastest
+SCLK (clk / 8); the slave itself has no minimum because SCLK is its clock.
+`addr > 31` or `clk_div < 4` is rejected: `err = 1`, `done = 1`, and CS
 never falls.
 
 **Master timing:** SCLK moves to the new CPOL idle level while CS is high. CS
 falls one cycle later. Setup (CS fall to first edge) and hold (last edge to CS
 rise) are each one half period.
 
-**Slave:** runs on the system clock and oversamples SCLK, CS and MOSI through
-2-flop synchronizers, then edge-detects SCLK and classifies each edge as
-leading or trailing from CPOL. On a read, the data byte is loaded right after
-the 8th sample, in time for the first data shift edge in either CPHA. Reset
-clears both FSMs but **not the memory**, so data written before reset must
-read back after it.
+**Slave:** like a real SPI device it has no system clock. SCLK is its clock
+and CS is its asynchronous reset. It clocks off `sck = sclk ^ cpol ^ cpha`,
+whose rising edge is the sample edge in every mode (MOSI shifts in, the bit
+counter advances, a write commits) and whose falling edge is the shift edge
+(the next MISO bit is driven). On a read, the shift edge after the 8th sample
+drives data bit 7, in time for the master's next sample edge in either CPHA.
+CPOL/CPHA only change while CS is high, so any `sck` edge they cause is held
+off by the reset. Reset (system `rst`, which raises CS, or CS itself) clears
+both FSMs but **not the memory**, so data written before reset must read back
+after it.
 
 ## 2. Testbench architecture
 
@@ -142,17 +147,19 @@ Seeds 1 to 5: all pass with 0 errors and 82/82 bins.
 | `ADDR`: slave stores write data one address too high | slave data path | Readback compare (404) and MISO byte in the frame check (404). The MOSI side of every write frame is still correct, which localises the bug to the slave. | 808 |
 | `MODE`: master idles SCLK low regardless of CPOL | master, CPOL | SVA `a_sclk_idle` and `a_mosi_stable_on_sample`. MOSI-side frame mismatches appear only in mode 2 frames; MISO and readback mismatches then spread to every mode, because those reads return data that was written wrong. | 2880 |
 | `CPHA`: master samples on the leading edge whatever CPHA is | master, CPHA | SVA `a_mosi_stable_on_sample`. MOSI-side frame mismatches appear only in CPHA = 1 frames (modes 1 and 3), which points straight at the phase logic. | 1984 |
+| `SLAVE_EDGE`: slave samples MOSI on the shift edge instead of the sample edge | slave, edge select | MISO byte in the frame check and the readback compare, in all four modes. MOSI at the pins is correct in every frame and no master SVA fires, which localises the bug to the slave. | 598 |
 
 Every assertion added in `checker.sv` was also mutated once and confirmed to fire.
 
-**A bug the environment does not catch.** A first version of the CPHA bug
-made the *slave* sample on the wrong edge. It passed: the slave oversamples
-SCLK and MOSI through identical 2-flop synchronizers, so in zero-delay RTL
-simulation it sees the new MOSI bit on the same edge it is launched and still
-gets the right data. On silicon that is a hold-time race. Catching it needs a
-timing-aware check (MOSI must be stable for some time before and after the
-sample edge, measured in SCLK time), gate-level simulation with delays, or
-STA, not more functional stimulus.
+**The wrong-edge slave, before and after.** The first version of the slave
+oversampled SCLK and MOSI through identical 2-flop synchronizers on the system
+clock. A slave sampling on the wrong edge then *passed*: in zero-delay RTL
+simulation it saw the new MOSI bit on the same edge it was launched and still
+got the right data. With the slave clocked by SCLK, the same bug (`make bug
+BUG=SLAVE_EDGE`) shifts the slave's view of the frame by one edge and fails
+with 598 errors. What simulation still cannot see is a slave that samples on
+the right edge but too close to it: setup and hold around SCLK edges need STA
+or gate-level simulation with delays.
 
 ### History
 
@@ -168,9 +175,11 @@ the SPI clocking and modes were added.
 - **Mid-frame events.** Reset and CS abort in the middle of a frame are not
   stimulated (the slave does discard a partial frame when CS rises, but no
   test proves it).
-- **Real clock-domain crossing.** SCLK is generated from the system clock, so
-  the slave's synchronizers never see a truly asynchronous edge. A CDC tool
-  run and a test with an external SCLK source would close this.
+- **Timing at the pins.** The simulation is zero-delay, so setup and hold of
+  MOSI and MISO around SCLK edges (and the MISO round-trip delay back to the
+  master, which samples it on `clk`) are not checked. That needs STA or
+  gate-level simulation with delays. If the slave's memory were also read
+  from a system bus, the SCLK-to-system crossing would need CDC checks.
 - **Register interface.** Requests come from pins, not a bus. A real
   controller would have APB registers, FIFOs, an interrupt and a DMA request,
   plus a RAL model.
@@ -190,7 +199,7 @@ the pip package names the binary `verilator-cli`, so add `VERILATOR=verilator-cl
 ```
 make UVM_HOME=/path/to/uvm-verilator/src            # build and run, prints PASSED or FAILED
 make run TEST=test SEED=3 UVM_HOME=...
-make bug BUG=ADDR UVM_HOME=...                       # injected RTL bug, must FAIL (ADDR | MODE | CPHA)
+make bug BUG=ADDR UVM_HOME=...                       # injected RTL bug, must FAIL (ADDR | MODE | CPHA | SLAVE_EDGE)
 ```
 
 Commercial simulators use the same file list; the commands are at the top of
